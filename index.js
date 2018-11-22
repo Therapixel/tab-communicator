@@ -136,7 +136,7 @@ class TabCommunicator {
 }
 
 let instance;
-export default function() {
+module.exports = function() {
     if (instance == null) {
         instance = new TabCommunicator();
     }
