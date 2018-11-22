@@ -21,7 +21,7 @@ class TabCommunicator {
             if (message.isResponse) {
                 this.responseEvents.emit(message.name, ...message.args);
             } else {
-                this.messageEvents.emit(message.name, ...message.args);
+                this.messageEvents.emit(message.name, ...message.args, message.ack);
             }
         }
     }
