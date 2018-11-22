@@ -1,9 +1,10 @@
+const EventEmitter = require('event-emitter');
 
 class TabCommunicator {
     constructor() {
-        this.messageCallbacks = {};
-        this.responseCallbacks = {};
-        this.responseTimeouts = {};
+        this.messageEvents = EventEmitter();
+        this.responseEvents = EventEmitter();
+        this.responseTimeoutEvents = EventEmitter();
 
         // constants
         this.storageMessagePrefix = 'tpxStorageMessage';
@@ -11,62 +12,55 @@ class TabCommunicator {
         this.storageMessageRegex = new RegExp(`^${this.storageMessagePrefix}:(.*)`);
         this.storageMessageResponseRegex = new RegExp(`^${this.storageMessageResponsePrefix}:(.*)`);
 
-        window.addEventListener('storage', (ev) => {
-            const message = this._parseMessageEvent(ev);
-            let callbacks = [];
-            if (message != null) {
-                if (message.isResponse) {
-                    callbacks = [ this.responseCallbacks[message.name] ];
-                    if (respCb != null) {
-                        clearTimeout(this.responseTimeouts[message.name]);
-                        delete this.responseCallbacks[message.name];
-                    }
-                } else {
-                    callbacks = this.messageCallbacks[message.name];
-                }
-            }
+        window.addEventListener('storage', this._onStorageEvent.bind(this));
+    }
 
-            callbacks.forEach(callback => {
-                callback(message);
-            });
-        });
+    _onStorageEvent(ev) {
+        const message = this._parseMessageEvent(ev);
+        if (message != null) {
+            if (message.isResponse) {
+                this.responseEvents.emit(message.name, message.args);
+            } else {
+                this.messageEvents.emit(message.name, message.args);
+            }
+        }
     }
 
     on(name, listener) {
-        if (this.messageCallbacks[name] == null) {
-            this.messageCallbacks[name] = [];
-        }
-        this.messageCallbacks[name].push((message) => {
-            listener(...message.args, message.ack);
-        });
+        this.messageEvents.on(name, listener);
+    }
+
+    once(name, listener) {
+        this.messageEvents.once(name, listener);
     }
 
     off(name, listener) {
-        if (this.mmessageCallbacks[name] == null) {
-            return;
-        }
-
-        const idx = this.mmessageCallbacks[name].indexOf(listener);
-        if (idx !== -1) {
-            this.messageCallbacks[name].splice(idx, 1);
-            if ( this.messageCallbacks[name].length <= 0) {
-                delete this.messageCallbacks[name];
-            }
-        }
+        this.messageEvents.off(name, listener);
     }
 
     emitWithTimeout(name, timeout, ...args) {
-        return new Promise((resolve, reject) => {
-            this._doEmitMessage(name, false, ...args);
+        if (timeout < 0) timeout = 0;
 
-            this.responseCallbacks[name] = resolve;
-            if (timeout > 0) {
-                const handle = setTimeout(() => {
-                    reject();
-                    delete this.responseCallbacks[name];
-                }, timeout);
-                this.responseTimeouts[name] = handle;
-            }
+        return new Promise((resolve, reject) => {
+            let solved = false;
+            this.responseEvents.once(name, (_) => {
+                if (!solved) {
+                    solved = true;
+                    resolve(_);
+                }
+            });
+            this.responseTimeoutEvents.once(name, (_) => {
+                if (!solved) {
+                    solved = true;
+                    reject(_);
+                }
+            });
+
+            setTimeout(() => {
+                this.responseTimeoutEvents.emit(name);
+            }, timeout);
+
+            this._doEmitMessage(name, false, ...args);
         });
     }
 
