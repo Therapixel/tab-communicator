@@ -19,9 +19,9 @@ class TabCommunicator {
         const message = this._parseMessageEvent(ev);
         if (message != null) {
             if (message.isResponse) {
-                this.responseEvents.emit(message.name, message.args);
+                this.responseEvents.emit(message.name, ...message.args);
             } else {
-                this.messageEvents.emit(message.name, message.args);
+                this.messageEvents.emit(message.name, ...message.args);
             }
         }
     }
