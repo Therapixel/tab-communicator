@@ -13,29 +13,46 @@ class TabCommunicator {
 
         window.addEventListener('storage', (ev) => {
             const message = this._parseMessageEvent(ev);
-            let callback;
+            let callbacks = [];
             if (message != null) {
                 if (message.isResponse) {
-                    callback = this.responseCallbacks[message.name];
+                    callbacks = [ this.responseCallbacks[message.name] ];
                     if (respCb != null) {
                         clearTimeout(this.responseTimeouts[message.name]);
                         delete this.responseCallbacks[message.name];
                     }
                 } else {
-                    callback = this.messageCallbacks[message.name];
+                    callbacks = this.messageCallbacks[message.name];
                 }
             }
 
-            if (callback != null) {
+            callbacks.forEach(callback => {
                 callback(message);
-            }
+            });
         });
     }
 
     on(name, listener) {
-        this.messageCallbacks[name] = (message) => {
+        if (this.messageCallbacks[name] == null) {
+            this.messageCallbacks[name] = [];
+        }
+        this.messageCallbacks[name].push((message) => {
             listener(...message.args, message.ack);
-        };
+        });
+    }
+
+    off(name, listener) {
+        if (this.mmessageCallbacks[name] == null) {
+            return;
+        }
+
+        const idx = this.mmessageCallbacks[name].indexOf(listener);
+        if (idx !== -1) {
+            this.messageCallbacks[name].splice(idx, 1);
+            if ( this.messageCallbacks[name].length <= 0) {
+                delete this.messageCallbacks[name];
+            }
+        }
     }
 
     emitWithTimeout(name, timeout, ...args) {
@@ -57,14 +74,14 @@ class TabCommunicator {
         return this._doEmitMessage(name, false, ...args);
     }
 
-    _doEmitMessage(storageMessageResponsePrefix, storageMessagePrefix, name, isResponse, ...args) {
+    _doEmitMessage(name, isResponse, ...args) {
         const type = typeof args;
         if (type === 'function') {
             return;
         }
 
         args = args.map(value => JSON.stringify(value));
-        const prefix = isResponse ? storageMessageResponsePrefix : storageMessagePrefix;
+        const prefix = isResponse ? this.storageMessageResponsePrefix : this.storageMessagePrefix;
         window.localStorage.setItem(`${prefix}:${name}`, JSON.stringify({
             type: type,
             values: args,
