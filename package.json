@@ -1,18 +1,25 @@
 {
   "name": "tab-communicator",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "Robin Goupil",
+  "version": "0.1.0",
+  "author": "Robin Goupil <rgoupil@therapixel.com>",
+  "analyze": true,
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/rgoupil/tab-communicator"
+    "url": "https://github.com/Therapixel/tab-communicator"
   },
   "bugs": {
-    "url": "https://github.com/rgoupil/tab-communicator/issues"
-  }
+    "url": "https://github.com/Therapixel/tab-communicator/issues"
+  },
+  "keywords": [
+    "tpx",
+    "crosstab",
+    "cross",
+    "across",
+    "tab",
+    "emitter",
+    "communication",
+    "communicator"
+  ],
+  "main": "index.js"
 }
