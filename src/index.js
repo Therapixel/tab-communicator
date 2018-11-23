@@ -2,9 +2,9 @@ const EventEmitter = require('event-emitter');
 
 class TabCommunicator {
     constructor() {
-        this.messageEvents = EventEmitter();
-        this.responseEvents = EventEmitter();
-        this.responseTimeoutEvents = EventEmitter();
+        this.messageEvents = new EventEmitter();
+        this.responseEvents = new EventEmitter();
+        this.responseTimeoutEvents = new EventEmitter();
 
         // constants
         this.storageMessagePrefix = 'tpxStorageMessage';
